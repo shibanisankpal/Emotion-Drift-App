@@ -1,7 +1,8 @@
-streamlit
-transformers
-torch
-spacy
-matplotlib
-pandas
-en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0-py3-none-any.whl
+streamlit==1.30.0
+spacy==3.6.1
+matplotlib==3.8.0
+pandas==2.1.0
+transformers==4.44.0
+torch==2.1.0+cpu
+
+
