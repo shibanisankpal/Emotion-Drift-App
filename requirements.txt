@@ -1,5 +1,5 @@
 streamlit==1.30.0
 transformers==4.36.2
-torch==2.9.1+cpu
-sentencepiece==0.2.1
+torch==2.9.1   # CPU-only, works with small models
 pandas==2.3.3
+
