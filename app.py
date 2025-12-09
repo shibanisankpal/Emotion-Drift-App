@@ -105,5 +105,6 @@ if st.button("Analyze"):
         st.subheader("🎭 Emotion Timeline")
         st.write(" → ".join(compact_timeline_list))
 
-        st.subheader("📊 Drift Score")
-        st.info(f"**{drift_score:.2f}** ({severity})")
+        #st.subheader("📊 Drift Score")
+        #st.info(f"**{drift_score:.2f}** ({severity})")
+
