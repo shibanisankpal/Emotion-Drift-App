@@ -1,6 +1,5 @@
 import streamlit as st
 from transformers import pipeline
-import pandas as pd
 import re
 
 # ----------------------
@@ -12,13 +11,18 @@ def split_sentences(text):
     return [p.strip() for p in parts if p.strip()]
 
 # ----------------------
-# Load emotion classifier
+# Load emotion classifier with caching
 # ----------------------
-classifier = pipeline(
-    "text-classification",
-    model="SamLowe/roberta-base-go-emotions",
-    top_k=None
-)
+@st.cache_resource(show_spinner=True)
+def load_classifier():
+    return pipeline(
+        "text-classification",
+        model="j-hartmann/emotion-english-distilroberta-base",
+        device=-1,  # CPU-only
+        top_k=None  # return all scores
+    )
+
+classifier = load_classifier()
 
 # ----------------------
 # Predict emotion(s)
@@ -89,22 +93,27 @@ def classify_drift_severity(score):
 # ----------------------
 # UI
 # ----------------------
+st.set_page_config(page_title="🧠 Emotion Drift Analyzer", layout="wide")
 st.title("🧠 Emotion Drift Analyzer")
 
 text = st.text_area("Enter your text:", height=200)
 
 if st.button("Analyze"):
-    if text.strip() == "":
-        st.warning("Please enter text.")
+    if not text.strip():
+        st.warning("Please enter some text.")
     else:
         sentences, emoji_list, compact_timeline_list, drift_score = compute_emotion_drift(text)
         severity = classify_drift_severity(drift_score)
 
+        # Show sentence-by-sentence emotions
+        st.subheader("🔹 Sentence Emotions")
+        for s, e in zip(sentences, emoji_list):
+            st.write(f"**{s}** → {e}")
+
         # Show compacted timeline
-        st.subheader("🎭 Emotion Timeline")
+        st.subheader("🎭 Compact Emotion Timeline")
         st.write(" → ".join(compact_timeline_list))
 
         # Drift score
         st.subheader("📊 Drift Score")
         st.info(f"**{drift_score:.2f}** ({severity})")
-

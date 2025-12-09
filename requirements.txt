@@ -1,6 +1,5 @@
 streamlit==1.30.0
 transformers==4.36.2
-protobuf
-sentencepiece
-
+torch==2.9.1+cpu
+sentencepiece==0.2.1
 
