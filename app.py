@@ -129,7 +129,8 @@ if st.button("Analyze"):
         # Overall sentiment
         label, score = predict_overall_sentiment(text)
         st.subheader("Overall Sentiment")
-        st.info(f"**{label}** (confidence: {score:.2f})")
+        st.info(f"**{label}**")
+
 
 
 
