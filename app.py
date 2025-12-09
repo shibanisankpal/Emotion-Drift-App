@@ -1,23 +1,38 @@
 import streamlit as st
 from transformers import pipeline
-import spacy
+import matplotlib.pyplot as plt
+import pandas as pd
+import re
 
-
-nlp = spacy.load("en_core_web_sm")
-
+# ----------------------
+# SIMPLE SENTENCE SPLITTER (replaces spaCy)
+# ----------------------
 def split_sentences(text):
-    doc = nlp(text)
-    return [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+    # Split by ., !, ? → keep clean, non-empty parts
+    parts = re.split(r'(?<=[.!?])\s+', text.strip())
+    return [p.strip() for p in parts if p.strip()]
 
-
+# ----------------------
+# Load emotion classifier
+# ----------------------
 classifier = pipeline(
     "text-classification",
     model="j-hartmann/emotion-english-distilroberta-base",
-    device=-1,  # CPU
-    top_k=None  # get all scores
+    top_k=None,    # return ALL scores
+    device=-1      # CPU
 )
 
-# Map emotions to emojis
+# ----------------------
+# Predict emotion(s)
+# ----------------------
+def predict_emotion(sentence, threshold=0.1):
+    output = classifier(sentence)[0]  # list of dicts
+    labels = [item["label"] for item in output if item["score"] >= threshold]
+    return labels if labels else ["neutral"]
+
+# ----------------------
+# Emoji mapping
+# ----------------------
 emotion_emojis = {
     "anger": "😡",
     "joy": "😄",
@@ -29,37 +44,40 @@ emotion_emojis = {
     "disgust": "🤢"
 }
 
-def predict_emotion(sentence, threshold=0.1):
-    output = classifier(sentence)  
-    if isinstance(output, list) and len(output) > 0 and isinstance(output[0], list):
-        output = output[0] 
-    
-    labels = [item["label"] for item in output if item["score"] >= threshold]
-    return labels if labels else ["unknown"]
+def emotions_to_emoji(labels):
+    return ", ".join([f"{l} {emotion_emojis.get(l, '')}" for l in labels])
 
+# ----------------------
+# Compact repeated emotions
+# ----------------------
+def compact_timeline(emoji_list):
+    compact = []
+    for e in emoji_list:
+        if not compact or e != compact[-1]:
+            compact.append(e)
+    return compact
 
-
-def compact_emoji_timeline(emotions_list):
-    timeline = []
-    for emo_group in emotions_list:
-        for e in emo_group:
-            entry = f"{emotion_emojis.get(e.lower(), '❓')} {e.lower()}"
-            if not timeline or timeline[-1] != entry:
-                timeline.append(entry)
-    return " → ".join(timeline)
-
-
+# ----------------------
+# Compute drift score
+# ----------------------
 def compute_emotion_drift(text):
     sentences = split_sentences(text)
     emotions_list = [predict_emotion(s) for s in sentences]
-    compact_timeline = compact_emoji_timeline(emotions_list)
+    emoji_list = [emotions_to_emoji(e) for e in emotions_list]
+    compact = compact_timeline(emoji_list)
 
-    flat_emotions = [e[0].lower() if e else "unknown" for e in emotions_list]
-    changes = sum(1 for i in range(1, len(flat_emotions)) if flat_emotions[i] != flat_emotions[i-1])
-    drift_score = changes / (len(flat_emotions) - 1) if len(flat_emotions) > 1 else 0
-    return compact_timeline, drift_score
+    # drift score
+    if len(compact) <= 1:
+        drift_score = 0
+    else:
+        changes = sum(compact[i] != compact[i-1] for i in range(1, len(compact)))
+        drift_score = changes / (len(compact) - 1)
 
+    return sentences, emoji_list, compact, drift_score
 
+# ----------------------
+# Drift severity label
+# ----------------------
 def classify_drift_severity(score):
     if score == 0:
         return "Stable (No Drift)"
@@ -70,8 +88,10 @@ def classify_drift_severity(score):
     else:
         return "High Emotional Volatility"
 
-
-st.title("Emotion Drift Analyzer")
+# ----------------------
+# UI
+# ----------------------
+st.title("🧠 Emotion Drift Analyzer")
 
 text = st.text_area("Enter your text:", height=200)
 
@@ -79,11 +99,13 @@ if st.button("Analyze"):
     if text.strip() == "":
         st.warning("Please enter text.")
     else:
-        timeline_str, drift_score = compute_emotion_drift(text)
+        sentences, emoji_list, compact_timeline_list, drift_score = compute_emotion_drift(text)
         severity = classify_drift_severity(drift_score)
 
-        st.subheader("🎨 Emotion Timeline")
-        st.write(timeline_str)
+        # Show compacted timeline
+        st.subheader("🎭 Emotion Timeline")
+        st.write(" → ".join(compact_timeline_list))
 
+        # Drift score
         st.subheader("📊 Drift Score")
         st.info(f"**{drift_score:.2f}** ({severity})")
