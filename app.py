@@ -17,9 +17,8 @@ def split_sentences(text):
 # ----------------------
 classifier = pipeline(
     "text-classification",
-    model="j-hartmann/emotion-english-distilroberta-base",
-    top_k=None,    # return ALL scores
-    device=-1      # CPU
+    model="SamLowe/roberta-base-go-emotions",
+    top_k=None
 )
 
 # ----------------------
@@ -109,3 +108,4 @@ if st.button("Analyze"):
         # Drift score
         st.subheader("📊 Drift Score")
         st.info(f"**{drift_score:.2f}** ({severity})")
+
