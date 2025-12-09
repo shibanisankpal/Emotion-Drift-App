@@ -1,7 +1,6 @@
 import streamlit as st
 from transformers import pipeline
 import re
-import pandas as pd
 
 # ----------------------
 # SIMPLE SENTENCE SPLITTER
@@ -11,21 +10,21 @@ def split_sentences(text):
     return [p.strip() for p in parts if p.strip()]
 
 # ----------------------
-# LOAD CLASSIFIER (CPU)
+# Load emotion classifier (small CPU-friendly model)
 # ----------------------
 @st.cache_resource
 def load_classifier():
     return pipeline(
         "text-classification",
         model="j-hartmann/emotion-english-distilroberta-base",
-        device=-1,   # CPU only
+        device=-1,  # CPU
         top_k=None
     )
 
 classifier = load_classifier()
 
 # ----------------------
-# PREDICT EMOTION
+# Predict emotion(s)
 # ----------------------
 def predict_emotion(sentence, threshold=0.1):
     output = classifier(sentence)[0]
@@ -33,7 +32,7 @@ def predict_emotion(sentence, threshold=0.1):
     return labels if labels else ["neutral"]
 
 # ----------------------
-# EMOJI MAPPING
+# Emoji mapping
 # ----------------------
 emotion_emojis = {
     "anger": "😡",
@@ -50,7 +49,7 @@ def emotions_to_emoji(labels):
     return ", ".join([f"{l} {emotion_emojis.get(l, '')}" for l in labels])
 
 # ----------------------
-# COMPACT TIMELINE
+# Compact repeated emotions
 # ----------------------
 def compact_timeline(emoji_list):
     compact = []
@@ -60,7 +59,7 @@ def compact_timeline(emoji_list):
     return compact
 
 # ----------------------
-# COMPUTE EMOTION DRIFT
+# Compute drift score
 # ----------------------
 def compute_emotion_drift(text):
     sentences = split_sentences(text)
@@ -77,7 +76,7 @@ def compute_emotion_drift(text):
     return sentences, emoji_list, compact, drift_score
 
 # ----------------------
-# CLASSIFY DRIFT SEVERITY
+# Drift severity label
 # ----------------------
 def classify_drift_severity(score):
     if score == 0:
@@ -90,15 +89,15 @@ def classify_drift_severity(score):
         return "High Emotional Volatility"
 
 # ----------------------
-# STREAMLIT UI
+# Streamlit UI
 # ----------------------
 st.title("🧠 Emotion Drift Analyzer")
 
 text = st.text_area("Enter your text:", height=200)
 
 if st.button("Analyze"):
-    if not text.strip():
-        st.warning("Please enter some text.")
+    if text.strip() == "":
+        st.warning("Please enter text.")
     else:
         sentences, emoji_list, compact_timeline_list, drift_score = compute_emotion_drift(text)
         severity = classify_drift_severity(drift_score)
@@ -108,4 +107,3 @@ if st.button("Analyze"):
 
         st.subheader("📊 Drift Score")
         st.info(f"**{drift_score:.2f}** ({severity})")
-
