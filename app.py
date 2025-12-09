@@ -1,6 +1,5 @@
 import streamlit as st
 from transformers import pipeline
-import matplotlib.pyplot as plt
 import pandas as pd
 import re
 
