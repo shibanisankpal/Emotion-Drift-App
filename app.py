@@ -32,6 +32,25 @@ def predict_emotion(sentence, threshold=0.1):
     return labels if labels else ["neutral"]
 
 # ----------------------
+# Load sentiment classifier (CPU)
+# ----------------------
+@st.cache_resource
+def load_sentiment_classifier():
+    return pipeline(
+        "sentiment-analysis",
+        model="distilbert-base-uncased-finetuned-sst-2-english",
+        device=-1
+    )
+
+sentiment_classifier = load_sentiment_classifier()
+
+# ----------------------
+# Predict overall sentiment
+# ----------------------
+def predict_overall_sentiment(text):
+    result = sentiment_classifier(text)[0]  # {'label': 'POSITIVE', 'score': 0.99}
+    return result["label"], result["score"]
+# ----------------------
 # Emoji mapping
 # ----------------------
 emotion_emojis = {
@@ -107,4 +126,11 @@ if st.button("Analyze"):
 
         #st.subheader("📊 Drift Score")
         #st.info(f"**{drift_score:.2f}** ({severity})")
+        # Overall sentiment
+        label, score = predict_overall_sentiment(text)
+        st.subheader("Overall Sentiment")
+        st.info(f"**{label}** (confidence: {score:.2f})")
+
+
+
 
