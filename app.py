@@ -16,7 +16,7 @@ def split_sentences(text):
 def load_classifier():
     return pipeline(
         "text-classification",
-        model="j-hartmann/emotion-english-distilroberta-base",
+        model="bhadresh-savani/distilbert-base-uncased-emotion",
         device=-1,  # CPU
         top_k=None
     )
@@ -130,6 +130,7 @@ if st.button("Analyze"):
         label, score = predict_overall_sentiment(text)
         st.subheader("Overall Sentiment")
         st.info(f"**{label}**")
+
 
 
 
